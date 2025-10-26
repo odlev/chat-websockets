@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Chat</title>
+    <style>
+        #chat {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+            overflow-y: auto;
+            padding: 8px;
+            background: #fafaff;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        #msg { width: 70%; }
+        #send { width: 20%; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <button id="connect">Connect</button>
+    <span id="status"></span>
+    <div id="chat"></div>
+    <input id="msg" type="text" placeholder="Введите сообщение">
+    <button id="send" disabled>Send</button>
+    <script>
+    let ws;
+    const chat = document.getElementById('chat');
+    const status = document.getElementById('status');
+    const sendBtn = document.getElementById('send');
+    const msgInput = document.getElementById('msg');
+
+    document.getElementById('connect').onclick = function() {
+        ws = new WebSocket('ws://' + window.location.host + '/ws');
+        ws.onopen = function() {
+            status.innerText = 'WebSocket connected!';
+            sendBtn.disabled = false;
+        };
+        ws.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                const time = data.time || '';
+                const user = data.ip_address || 'server';
+                const text = data.message || event.data;
+                chat.innerHTML += `<div><b>[${time}] ${user}:</b> ${text}</div>`;
+            } catch {
+                chat.innerHTML += `<div>${event.data}</div>`;
+            }
+            chat.scrollTop = chat.scrollHeight;
+        };
+        ws.onerror = function(e) {
+            status.innerText = 'WebSocket error!';
+        };
+        ws.onclose = function() {
+            status.innerText = 'WebSocket closed.';
+            sendBtn.disabled = true;
+        };
+    };
+
+    sendBtn.onclick = function() {
+        const text = msgInput.value;
+        if (ws && ws.readyState === WebSocket.OPEN && text) {
+            const msg = { message: text };
+            ws.send(JSON.stringify(msg));
+            msgInput.value = '';
+        }
+    };
+
+    msgInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') sendBtn.click();
+    });
+    </script>
+</body>
+</html>

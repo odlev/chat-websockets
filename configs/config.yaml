@@ -1,0 +1,3 @@
+websocket:
+  address: "your_address:8080"
+  html_address: ./web/html
