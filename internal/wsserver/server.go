@@ -3,6 +3,8 @@ package wsserver
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
@@ -28,6 +30,8 @@ type wsSrv struct {
 	mu        sync.RWMutex
 	broadcast chan *wsMessage
 	log       zerolog.Logger
+	certFile  string
+	keyFile   string
 }
 
 func New(addr string, cfg *config.Config, log zerolog.Logger) WSServer {
@@ -37,23 +41,34 @@ func New(addr string, cfg *config.Config, log zerolog.Logger) WSServer {
 		srv: &http.Server{
 			Addr:    addr,
 			Handler: m,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS13,
+			},
 		},
 		Upgrader:  websocket.Upgrader{},
 		cfg:       cfg,
 		Clients:   make(map[*websocket.Conn]struct{}),
 		broadcast: make(chan *wsMessage),
 		log:       log,
+		certFile:  cfg.Certificates.CertificatePath,
+		keyFile:   cfg.Certificates.KeyPath,
 	}
 }
 
 func (ws *wsSrv) Start() error {
+	cert, err := tls.LoadX509KeyPair(ws.certFile, ws.keyFile)
+	if err != nil {
+		return fmt.Errorf("failed to load certificate pair: %w", err)
+	}
+
+	ws.srv.TLSConfig.Certificates = append(ws.srv.TLSConfig.Certificates, cert)
 	ws.mux.Handle("/", http.FileServer(http.Dir(ws.cfg.HTMLAddress)))
 
 	ws.mux.HandleFunc("/test", ws.testHandler)
 	ws.mux.HandleFunc("/ws", ws.wsHandler)
 	go ws.writeToclientsBroadcast()
 
-	return ws.srv.ListenAndServe()
+	return ws.srv.ListenAndServeTLS(ws.certFile, ws.keyFile)
 }
 
 func (ws *wsSrv) Address() string {

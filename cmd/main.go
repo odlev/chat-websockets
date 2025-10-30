@@ -21,6 +21,10 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	// --- tls, вау)) ---
+	cfg.Certificates.CertificatePath = os.Getenv("CERTIFICATE_PATH")
+	cfg.Certificates.KeyPath = os.Getenv("KEY_PATH")
+
 	wsSrv := wsserver.New(cfg.Websocket.Address, cfg, log)
 	log.Info().Str("address", wsSrv.Address()).Msg("started ws server")
 	go func() {

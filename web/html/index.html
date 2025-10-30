@@ -33,7 +33,7 @@
     const msgInput = document.getElementById('msg');
 
     document.getElementById('connect').onclick = function() {
-        ws = new WebSocket('ws://' + window.location.host + '/ws');
+        ws = new WebSocket('wss://' + window.location.host + '/ws');
         ws.onopen = function() {
             status.innerText = 'WebSocket connected!';
             sendBtn.disabled = false;

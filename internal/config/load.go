@@ -9,11 +9,17 @@ import (
 
 type Config struct {
 	Websocket `mapstructure:"websocket"`
+	Certificates
 }
 
 type Websocket struct {
 	Address string `mapstructure:"address"`
 	HTMLAddress string `mapstructure:"html_address"`
+}
+
+type Certificates struct {
+	CertificatePath string
+	KeyPath string
 }
 
 func Load(path string) (*Config, error) {
